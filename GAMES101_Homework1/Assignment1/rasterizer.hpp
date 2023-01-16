@@ -16,6 +16,8 @@ enum class Buffers
     Depth = 2
 };
 
+//这里重载操作符能索引进来还不错,但是这个操作符重载确实有点意思
+//建议重载操作符都卸载对应的类里面
 inline Buffers operator|(Buffers a, Buffers b)
 {
     return Buffers((int)a | (int)b);
@@ -50,14 +52,19 @@ struct ind_buf_id
 class rasterizer
 {
   public:
+
     rasterizer(int w, int h);
+
     pos_buf_id load_positions(const std::vector<Eigen::Vector3f>& positions);
     ind_buf_id load_indices(const std::vector<Eigen::Vector3i>& indices);
-
+    
+    //将内部的模型矩阵作为参数传递给光栅化器。
     void set_model(const Eigen::Matrix4f& m);
+    //将视图变换矩阵设为内部视图矩阵
     void set_view(const Eigen::Matrix4f& v);
+    //将内部的投影矩阵设为给定矩阵 p，并传递给光栅化器
     void set_projection(const Eigen::Matrix4f& p);
-
+    //将屏幕像素点 (x, y) 设为 (r, g, b) 的颜色，并写入相应的帧缓冲区位置。
     void set_pixel(const Eigen::Vector3f& point, const Eigen::Vector3f& color);
 
     void clear(Buffers buff);
@@ -70,16 +77,18 @@ class rasterizer
     void draw_line(Eigen::Vector3f begin, Eigen::Vector3f end);
     void rasterize_wireframe(const Triangle& t);
 
-  private:
+  private:  
+
+    //mvp 三个齐次矩阵,float对于科学计算来说速度快很多
     Eigen::Matrix4f model;
     Eigen::Matrix4f view;
     Eigen::Matrix4f projection;
+    //帧缓冲对象，用于存储需要在屏幕上绘制的颜色数据。
+    std::vector<Eigen::Vector3f> frame_buf;
+    std::vector<float> depth_buf;              ///< 变量在构造函数执行之前在栈区创建
 
     std::map<int, std::vector<Eigen::Vector3f>> pos_buf;
     std::map<int, std::vector<Eigen::Vector3i>> ind_buf;
-
-    std::vector<Eigen::Vector3f> frame_buf;
-    std::vector<float> depth_buf;
     int get_index(int x, int y);
 
     int width, height;
