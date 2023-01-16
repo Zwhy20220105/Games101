@@ -3,50 +3,103 @@
 #include <eigen3/Eigen/Eigen>
 #include <iostream>
 #include <opencv2/opencv.hpp>
-
+#include <math.h>
+#include <iostream>
 constexpr double MY_PI = 3.1415926;
 
+/**
+ * @brief Get the view matrix object
+ * 视图变化,将所有的物体(图元)移动到 eye_pos
+ * @param eye_pos 摄像机的位置
+ * @return Eigen::Matrix4f 
+ */
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
 
     Eigen::Matrix4f translate;
-    translate << 1, 0, 0, -eye_pos[0], 0, 1, 0, -eye_pos[1], 0, 0, 1,
-        -eye_pos[2], 0, 0, 0, 1;
+    translate <<
+    1, 0, 0, -eye_pos[0],
+    0, 1, 0, -eye_pos[1],
+    0, 0, 1, -eye_pos[2], 
+    0, 0, 0, 1;
 
     view = translate * view;
 
     return view;
 }
 
-//get_model_matrix(float rotation_angle): 逐个元素地构建模型变换矩
-//阵并返回该矩阵。在此函数中，你只需要实现三维中绕 z 轴旋转的变换矩阵，
-//而不用处理平移与缩放。
+/**
+ * @brief Get the model matrix object
+ * 逐个元素地构建模型变换矩阵并返回该矩阵。
+ * @param rotation_angle 需要绕着z旋转的角度
+ * @return Eigen::Matrix4f 
+ */
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
+    //在此函数中，你只需要实现三维中绕 z 轴旋转的变换矩阵，而不用处理平移与缩放。
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
 
     // TODO: Implement this function
     // Create the model matrix for rotating the triangle around the Z axis.
     // Then return it.
-
-    return model;
+    Eigen::Matrix4f translate;
+    // cost  -siny  
+    // sint  cost   
+    translate <<
+    std::cos(rotation_angle), -std::sin(rotation_angle), 0, 0,
+    std::sin(rotation_angle), std::cos(rotation_angle) ,0, 0,
+    0, 0, 1, 1, 
+    0, 0, 0, 1;
+    std::cout<<"translate.\r"<<translate <<std::endl;
+    //getchar();
+    return translate*model;
 }
 
-//get_projection_matrix(float eye_fov, float aspect_ratio, float
-//zNear, float zFar): 使用给定的参数逐个元素地构建透视投影矩阵并返回
-//该矩阵  
+/**
+ * @brief Get the projection matrix object
+ * 使用给定的参数逐个元素地构建透视投影矩阵并返回该矩阵 
+ * @param eye_fov       可视角度
+ * @param aspect_ratio  宽高比
+ * @param zNear         比较近的z值
+ * @param zFar          比较远的z值
+ * @data  45, 1, 0.1, 50
+ * @return Eigen::Matrix4f 
+ */
+
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
                                       float zNear, float zFar)
 {
     // Students will implement this function
-    
     Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
-
     // TODO: Implement this function
     // Create the projection matrix for the given parameters.
     // Then return it.
 
+    //透视投影矩阵
+    Eigen::Matrix4f perspect;
+    perspect <<
+    zNear, 0, 0, 0,
+    0, zNear, 0, 0,
+    0, 0, zNear+zFar, -(zNear*zFar), 
+    0, 0, 0, 1;
+    std::cout<<"perspect.\r"<<perspect <<std::endl;
+    //正交投影矩阵
+    Eigen::Matrix4f ortho;
+    float width,height;
+    height = std::fabs(zNear)*std::tan(eye_fov/2);
+    width  = height*aspect_ratio;
+
+    std::cout<<"height. "<< height<<std::endl;
+    std::cout<<"width. " << width<<std::endl;
+    ortho <<
+    width/2, 0, 0, width/2,
+    0,  height/2, 0,  height/2,
+    0, 0, 1, 0, 
+    0, 0, 0, 1;
+    std::cout<<"ortho.\r"<<ortho <<std::endl;
+    //getchar();
+    projection =  perspect * projection;
     return projection;
 }
 
@@ -71,6 +124,7 @@ int main(int argc, const char** argv)
     //一,是将物体3D坐标转变为屏幕空间2D坐标
     //二,是为屏幕每个像素点进行着色。
     rst::rasterizer r(700, 700);
+
     Eigen::Vector3f eye_pos = {0, 0, 5};
     std::vector<Eigen::Vector3f> pos{{2, 0, -2}, {0, 2, -2}, {-2, 0, -2}};
     std::vector<Eigen::Vector3i> ind{{0, 1, 2}};
@@ -122,12 +176,13 @@ int main(int argc, const char** argv)
 
         if (key == 'a')
          {
-            angle += 10;
+            angle += 90;
         }
         else if (key == 'd')
          {
-            angle -= 10;
+            angle -= 90;
         }
+
     }
 
     return 0;

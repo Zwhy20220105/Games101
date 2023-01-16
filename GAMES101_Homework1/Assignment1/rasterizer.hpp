@@ -20,6 +20,7 @@ enum class Buffers
 //建议重载操作符都卸载对应的类里面
 inline Buffers operator|(Buffers a, Buffers b)
 {
+    //这里一步还是有点难
     return Buffers((int)a | (int)b);
 }
 
