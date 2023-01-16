@@ -16,7 +16,7 @@ constexpr double MY_PI = 3.1415926;
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
-
+    //视图矩阵作用一句话简明表达就是世界坐标系转换到摄像机坐标系。
     Eigen::Matrix4f translate;
     translate <<
     1, 0, 0, -eye_pos[0],
@@ -25,7 +25,11 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
     0, 0, 0, 1;
 
     view = translate * view;
+    std::cout<<"view.\n"<<view <<std::endl;
 
+    Eigen::Vector4f up(0.0f,2.0f,-2.0f,1.0f);
+    auto result=view*up;
+    std::cout<<"up translate result.\n"<<result <<std::endl;
     return view;
 }
 
@@ -43,17 +47,16 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
     // TODO: Implement this function
     // Create the model matrix for rotating the triangle around the Z axis.
     // Then return it.
-    Eigen::Matrix4f translate;
-    // cost  -siny  
-    // sint  cost   
+    Eigen::Matrix4f translate;           ///<课堂上现成的公式,这个的话,其实有点没懂>
+    float angle = rotation_angle * MY_PI / 180.f; ///< C++中cos,sin,asin,acos这些三角函数操作的是弧度,而非角度>  
     translate <<
-    std::cos(rotation_angle), -std::sin(rotation_angle), 0, 0,
-    std::sin(rotation_angle), std::cos(rotation_angle) ,0, 0,
+    std::cos(angle), -std::sin(angle), 0, 0,
+    std::sin(angle), std::cos(angle) ,0, 0,
     0, 0, 1, 1, 
     0, 0, 0, 1;
-    std::cout<<"translate.\r"<<translate <<std::endl;
+    std::cout<<"translate.\n"<<translate <<std::endl;
     //getchar();
-    return translate*model;
+    return translate*model;///<有意思>
 }
 
 /**
@@ -70,36 +73,62 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
                                       float zNear, float zFar)
 {
-    // Students will implement this function
+    // // Students will implement this function
     Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
-    // TODO: Implement this function
-    // Create the projection matrix for the given parameters.
-    // Then return it.
-
-    //透视投影矩阵
-    Eigen::Matrix4f perspect;
+    // // TODO: Implement this function
+    // // Create the projection matrix for the given parameters.
+    // // Then return it.
+    
+    //在相机坐标系中,近距平面和远平面都是负的
+    zNear=-zNear;
+    zFar=-zFar;
+    //透视投影矩阵              
+    Eigen::Matrix4f perspect;   ///<这边主要是带公式,不是很难
     perspect <<
     zNear, 0, 0, 0,
     0, zNear, 0, 0,
     0, 0, zNear+zFar, -(zNear*zFar), 
-    0, 0, 0, 1;
-    std::cout<<"perspect.\r"<<perspect <<std::endl;
+    0, 0, 1, 0;
+    std::cout<<"perspect.\n"<<perspect <<std::endl;
     //正交投影矩阵
-    Eigen::Matrix4f ortho;
+    Eigen::Matrix4f pixel;                          ///<公式记错了,这是变换到像素坐标系>
+    float eye_fov_angle = eye_fov/2.f* MY_PI / 180.f; ///< 注意到可视角度也是角度,不是弧度>
     float width,height;
-    height = std::fabs(zNear)*std::tan(eye_fov/2);
-    width  = height*aspect_ratio;
-
-    std::cout<<"height. "<< height<<std::endl;
-    std::cout<<"width. " << width<<std::endl;
-    ortho <<
-    width/2, 0, 0, width/2,
-    0,  height/2, 0,  height/2,
-    0, 0, 1, 0, 
-    0, 0, 0, 1;
-    std::cout<<"ortho.\r"<<ortho <<std::endl;
+    float y,x;             ///<好好理解一下>
+    y=height = std::fabs(zNear)*std::tan(eye_fov_angle);
+    x=width  = height*aspect_ratio;
+    
+    // pixel << 
+    // width/2, 0, 0, width/2,
+    // 0,  height/2, 0,  height/2, ///< 这边是变换到像素坐标系,理解错了>
+    // 0, 0, 1, 0, 
+    // 0, 0, 0, 1;
+    std::cout<<"x.y\n"<<x<<"."<<y <<std::endl;
     //getchar();
-    projection =  perspect * projection;
+    Eigen::Matrix4f standard;           ///<课堂上现成的公式,规范化>
+    standard <<
+        1.0/x, 0, 0, 0,
+        0, 1.0/y, 0, 0,
+        0, 0, 2.0/(zNear - zFar), 0,
+        0, 0, 0, 1;
+    std::cout<<"standard.\n"<<standard <<std::endl;
+
+    Eigen::Matrix4f gohome ;           ///<课堂上现成的公式,归零>
+    gohome << 
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, -(zNear+zFar)/2.0,
+        0, 0, 0, 1;
+    std::cout<<"gohome.\n"<<gohome <<std::endl;
+
+    Eigen::Matrix4f ortho;               ///<课堂上现成的公式,乃正交投影>
+    ortho = standard * gohome;
+    //projection = ortho*perspect * projection;
+    //很有意思的一点是为不用正交投影这里就很小呢,因为确实很远啊
+    //projection = perspect * projection;
+    projection =  ortho * perspect * projection;
+    // projection = projection*perspect*ortho;
+    //getchar();
     return projection;
 }
 
