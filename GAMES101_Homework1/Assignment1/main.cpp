@@ -46,6 +46,7 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
 
 int main(int argc, const char** argv)
 {
+    /** arg是命令行启动时的参数，多进程！*/
     float angle = 0;
     bool command_line = false;
     std::string filename = "output.png";
